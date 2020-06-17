@@ -8,13 +8,15 @@ FROM base as builder
 
 WORKDIR /app
 
-COPY --from=base /usr/ /usr/
+COPY --from=base /usr/tvm /usr/tvm
+COPY --from=base /usr/local/lib/python3.6/dist-packages /usr/local/lib/python3.6/dist-packages 
 
 ENV PYTHONPATH=/usr/tvm/python:/usr/tvm/topi/python:/usr/tvm/vta/python:${PYTHONPATH} \
     PIP_DEFAULT_TIMEOUT=100 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1
 
+RUN apt-get update && apt-get install -y --no-install-recommends antlr4
 RUN pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir \
     attrs \

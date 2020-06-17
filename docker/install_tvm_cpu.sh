@@ -24,7 +24,7 @@ cd /usr
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd /usr/tvm
 # checkout a hash-tag
-git checkout 4b13bf668edc7099b38d463e5db94ebc96c80470
+git checkout 3e72be58f362a21dbcc1de36f9dbed216e854baf
 
 echo set\(USE_LLVM llvm-config-8\) >> config.cmake
 echo set\(USE_RPC ON\) >> config.cmake
