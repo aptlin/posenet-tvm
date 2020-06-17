@@ -1,0 +1,47 @@
+FROM tvmai/ci-cpu:v0.55 as base
+
+# Build TVM
+COPY docker/install_tvm_cpu.sh /install/install_tvm_cpu.sh
+RUN bash /install/install_tvm_cpu.sh
+
+FROM base as builder
+
+WORKDIR /app
+
+COPY --from=base /usr/ /usr/
+
+ENV PYTHONPATH=/usr/tvm/python:/usr/tvm/topi/python:/usr/tvm/vta/python:${PYTHONPATH} \
+    PIP_DEFAULT_TIMEOUT=100 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir \
+    attrs \
+    numpy \ 
+    decorator \
+    tornado \
+    psutil \
+    xgboost \
+    matplotlib \
+    Image \
+    Pillow \
+    jupyter \
+    jupyterlab \
+    mxnet \
+    tensorflow \
+    keras \
+    gluoncv \
+    dgl \
+    torch \
+    torchvision
+
+ARG POETRY_VERSION=1.0.9
+
+COPY pyproject.toml poetry.lock ./
+RUN pip3 install --no-cache-dir --upgrade pip \
+    && pip3 install --no-cache-dir poetry==$POETRY_VERSION \
+    && poetry config virtualenvs.create false \
+    && poetry install 
+
+CMD ["jupyter", "lab"]

@@ -1,0 +1,17 @@
+version: "3"
+services:
+  posenet-cpu:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile.cpu 
+    container_name: "posenet_cpu"
+    ports:
+      - 8888:8888
+    networks:
+      - posenet-network
+    command:  jupyter lab --ip 0.0.0.0 --no-browser --allow-root
+    volumes: 
+      - .:/app
+
+networks:
+  posenet-network:
