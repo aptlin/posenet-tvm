@@ -42,6 +42,7 @@ from posenet.constants import NUM_KEYPOINTS
 #  * and position.
 #  */
 
+
 def decode_single_pose(scores, offsets, output_stride):
     total_score = 0.0
 
@@ -60,46 +61,20 @@ def decode_single_pose(scores, offsets, output_stride):
         torch.arange(NUM_KEYPOINTS),
         heatmap_max_score_coords[:, 0],
         heatmap_max_score_coords[:, 1],
-        :
+        :,
     ]
-    offset_points = (heatmap_max_score_coords * output_stride).float() + offset_vectors
-    
+    keypoints = (heatmap_max_score_coords * output_stride).float() + offset_vectors
 
-# export async function decodeSinglePose(
-#     heatmapScores: tf.Tensor3D, offsets: tf.Tensor3D,
-#     outputStride: PoseNetOutputStride): Promise<Pose> {
-#   let totalScore = 0.0;
+    keypoint_confidence = scores[
+        torch.arange(NUM_KEYPOINTS),
+        heatmap_max_score_coords[:, 0],
+        heatmap_max_score_coords[:, 1],
+    ]
 
-#   const heatmapValues = argmax2d(heatmapScores);
+    confidence = keypoint_confidence.mean()
 
-#   const allTensorBuffers = await Promise.all(
-#       [heatmapScores.buffer(), offsets.buffer(), heatmapValues.buffer()]);
-
-#   const scoresBuffer = allTensorBuffers[0];
-#   const offsetsBuffer = allTensorBuffers[1];
-#   const heatmapValuesBuffer = allTensorBuffers[2];
-
-#   const offsetPoints =
-#       getOffsetPoints(heatmapValuesBuffer, outputStride, offsetsBuffer);
-#   const offsetPointsBuffer = await offsetPoints.buffer();
-
-#   const keypointConfidence =
-#       Array.from(getPointsConfidence(scoresBuffer, heatmapValuesBuffer));
-
-#   const keypoints = keypointConfidence.map((score, keypointId): Keypoint => {
-#     totalScore += score;
-#     return {
-#       position: {
-#         y: offsetPointsBuffer.get(keypointId, 0),
-#         x: offsetPointsBuffer.get(keypointId, 1)
-#       },
-#       part: partNames[keypointId],
-#       score
-#     };
-#   });
-
-#   heatmapValues.dispose();
-#   offsetPoints.dispose();
-
-#   return {keypoints, score: totalScore / keypoints.length};
-# }
+    return (
+        keypoints.to("cpu").numpy(),
+        confidence.to("cpu").numpy(),
+        keypoint_confidence.to("cpu").numpy(),
+    )

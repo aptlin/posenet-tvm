@@ -48,8 +48,10 @@ def read_cap(cap, scale_factor=1.0, output_stride=16):
     return process_input(img, scale_factor, output_stride)
 
 
-def read_imgfile(path, scale_factor=1.0, output_stride=16):
+def read_imgfile(path, scale_factor=1.0, output_stride=16, resize=None, **kwargs):
     img = cv2.imread(path)
+    if resize:
+        img = cv2.resize(img, resize, **kwargs)
     return process_input(img, scale_factor, output_stride)
 
 
