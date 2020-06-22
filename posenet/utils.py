@@ -1,7 +1,17 @@
 import cv2
 import numpy as np
+import torch
 
 import posenet.constants
+
+
+def argmax2d(inputs):
+    depth, height, width = inputs.shape
+    reshaped = inputs.reshape(depth, height * width)
+    coords = reshaped.argmax(axis=1)
+    y_coords = (coords // width).unsqueeze(1)
+    x_coords = (coords % width).unsqueeze(1)
+    return torch.cat([y_coords, x_coords], 1)
 
 
 def valid_resolution(width, height, output_stride=16):

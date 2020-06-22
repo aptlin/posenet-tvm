@@ -1,6 +1,6 @@
 import numpy as np
 
-from posenet.constants import *
+from posenet.constants import PARENT_CHILD_TUPLES
 
 
 def traverse_to_targ_keypoint(
