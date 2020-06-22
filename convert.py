@@ -15,8 +15,8 @@ from utils import str2bool
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=int, default=101)
 parser.add_argument("--scale-factor", type=float, default=1.0)
-parser.add_argument("--output-dir", type=str, default="./output")
-parser.add_argument("--input-name", type=str, default="posenet_input")
+parser.add_argument("--output-dir", type=str, default="./build")
+parser.add_argument("--input-name", type=str, default="image")
 parser.add_argument("--force-cpu", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--processing-width", type=int, default=600)
 parser.add_argument("--processing-height", type=int, default=340)
@@ -62,9 +62,15 @@ def main():
             mod, target=args.target, target_host=args.target_host, params=params
         )
 
-    path_lib = "{}/deploy_lib.tar".format(args.output_dir)
-    path_graph = "{}/deploy_graph.json".format(args.output_dir)
-    path_params = "{}/deploy_params.params".format(args.output_dir)
+    path_lib = "{}/deploy_lib_{}_{}_{}.tar".format(
+        args.output_dir, args.input_name, args.processing_width, args.processing_height
+    )
+    path_graph = "{}/deploy_graph_{}_{}_{}.json".format(
+        args.output_dir, args.input_name, args.processing_width, args.processing_height
+    )
+    path_params = "{}/deploy_params_{}_{}_{}.params".format(
+        args.output_dir, args.input_name, args.processing_width, args.processing_height
+    )
 
     lib.export_library(path_lib)
     with open(path_graph, "w") as f:

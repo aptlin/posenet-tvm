@@ -1,20 +1,38 @@
 import argparse
 import os
-import time
+from timeit import default_timer as now
 
 import cv2
+import numpy as np
 import torch
+import tvm
+from tvm.contrib import graph_runtime
 
 import posenet
 from utils import str2bool
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=int, default=101)
+parser.add_argument("--decoder", type=str, default="multi")
 parser.add_argument("--scale_factor", type=float, default=1.0)
 parser.add_argument("--notxt", action="store_true")
 parser.add_argument("--image_dir", type=str, default="./images")
 parser.add_argument("--output_dir", type=str, default="./output")
 parser.add_argument("--force-cpu", type=str2bool, nargs="?", const=True, default=False)
+parser.add_argument("--use-tvm", type=str2bool, nargs="?", const=True, default=False)
+parser.add_argument("--resize", type=str2bool, nargs="?", const=True, default=False)
+parser.add_argument("--input-name", type=str, default="image")
+parser.add_argument("--processing-width", type=int, default=600)
+parser.add_argument("--processing-height", type=int, default=340)
+parser.add_argument(
+    "--tvm-graph", type=str, default="./build/deploy_graph_image_600_340.json"
+)
+parser.add_argument(
+    "--tvm-lib", type=str, default="./build/deploy_lib_image_600_340.tar"
+)
+parser.add_argument(
+    "--tvm-params", type=str, default="./build/deploy_params_image_600_340.params"
+)
 args = parser.parse_args()
 
 DEVICE = (
@@ -26,7 +44,7 @@ DEVICE = (
 
 def main():
     model = posenet.load_model(args.model)
-    model = model.to(DEVICE)
+    model = model.to(DEVICE).eval()
     output_stride = model.output_stride
 
     if args.output_dir:
@@ -39,35 +57,86 @@ def main():
         if f.is_file() and f.path.endswith((".png", ".jpg"))
     ]
 
-    start = time.time()
+    if args.use_tvm:
+        with open(args.tvm_graph) as f:
+            tvm_graph = f.read()
+        tvm_lib = tvm.runtime.load_module(args.tvm_lib)
+        with open(args.tvm_params, "rb") as f:
+            tvm_params = bytearray(f.read())
+        ctx = tvm.cpu()
+        module = graph_runtime.create(tvm_graph, tvm_lib, ctx)
+        module.load_params(tvm_params)
+
+    inference_time = []
+    processing_time = []
+
     for f in filenames:
         input_image, draw_image, output_scale = posenet.read_imgfile(
-            f, scale_factor=args.scale_factor, output_stride=output_stride
+            f,
+            scale_factor=args.scale_factor,
+            output_stride=output_stride,
+            resize=(args.processing_width, args.processing_height)
+            if args.resize
+            else None,
         )
-
+        start = now()
         with torch.no_grad():
-            input_image = torch.Tensor(input_image).to(DEVICE)
+            if args.use_tvm:
+                input_data = tvm.nd.array(input_image)
+                module.run(**{args.input_name: input_data})
+                out = []
+                for idx in range(module.get_num_outputs()):
+                    res = (
+                        torch.Tensor(module.get_output(idx).asnumpy())
+                        .squeeze(0)
+                        .to(DEVICE)
+                    )
+                    out.append(res)
+
+            else:
+                input_image = torch.Tensor(input_image).to(DEVICE)
+
+                out = []
+                for idx, res in enumerate(model(input_image)):
+                    out.append(res.squeeze(0))
+
+            inference_time.append(now() - start)
 
             (
                 heatmaps_result,
                 offsets_result,
                 displacement_fwd_result,
                 displacement_bwd_result,
-            ) = model(input_image)
+            ) = out
 
-            (
-                pose_scores,
-                keypoint_scores,
-                keypoint_coords,
-            ) = posenet.decode_multiple_poses(
-                heatmaps_result.squeeze(0),
-                offsets_result.squeeze(0),
-                displacement_fwd_result.squeeze(0),
-                displacement_bwd_result.squeeze(0),
-                output_stride=output_stride,
-                max_pose_detections=10,
-                min_pose_score=0.25,
-            )
+            start = now()
+            if args.decoder == "multi":
+                (
+                    pose_scores,
+                    keypoint_scores,
+                    keypoint_coords,
+                ) = posenet.decode_multiple_poses(
+                    heatmaps_result,
+                    offsets_result,
+                    displacement_fwd_result,
+                    displacement_bwd_result,
+                    output_stride,
+                    max_pose_detections=10,
+                    min_pose_score=0.25,
+                )
+            elif args.decoder == "single":
+                (keypoints, pose_score, keypoint_scores) = posenet.decode_single_pose(
+                    heatmaps_result, offsets_result, output_stride
+                )
+                pose_scores = np.asarray([pose_score])
+                keypoint_scores = np.asarray([keypoint_scores])
+                keypoint_coords = np.asarray([keypoints])
+
+            else:
+                raise NotImplementedError(
+                    "The decoder {} is not implemented.".format(decoder)
+                )
+            processing_time.append(now() - start)
 
         keypoint_coords *= output_scale
 
@@ -87,21 +156,25 @@ def main():
             )
 
         if not args.notxt:
-            print()
             print("Results for image: %s" % f)
-            for pi in range(len(pose_scores)):
-                if pose_scores[pi] == 0.0:
+            for point_idx in range(len(pose_scores)):
+                if pose_scores[point_idx] == 0.0:
                     break
-                print("Pose #%d, score = %f" % (pi, pose_scores[pi]))
-                for ki, (s, c) in enumerate(
-                    zip(keypoint_scores[pi, :], keypoint_coords[pi, :, :])
+                print("Pose #%d, score = %f" % (point_idx, pose_scores[point_idx]))
+                for keypoint_idx, (score, coord) in enumerate(
+                    zip(keypoint_scores[point_idx, :], keypoint_coords[point_idx, :, :])
                 ):
                     print(
                         "Keypoint %s, score = %f, coord = %s"
-                        % (posenet.PART_NAMES[ki], s, c)
+                        % (posenet.PART_NAMES[keypoint_idx], score, coord)
                     )
 
-    print("Average FPS:", len(filenames) / (time.time() - start))
+    avg_processing_time = np.mean(processing_time)
+    avg_inference_time = np.mean(inference_time)
+    print("=" * 80)
+    print("Average post-processing FPS: {:.2f}".format(1 / avg_processing_time))
+    print("Average inference FPS: {:.2f}".format(1 / avg_inference_time))
+    print("Average FPS: {:.2f}".format(1 / (avg_processing_time + avg_inference_time)))
 
 
 if __name__ == "__main__":

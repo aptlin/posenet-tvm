@@ -1,8 +1,10 @@
-from posenet.decode import *
-from posenet.constants import *
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from posenet.constants import LOCAL_MAXIMUM_RADIUS, NUM_KEYPOINTS
+from posenet.multi.decode_pose import decode_pose, traverse_to_targ_keypoint
 
 
 def within_nms_radius_fast(pose_coords, squared_nms_radius, point):
