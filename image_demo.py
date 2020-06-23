@@ -5,6 +5,7 @@ from timeit import default_timer as now
 import cv2
 import numpy as np
 import torch
+from tqdm import tqdm
 import tvm
 from tvm.contrib import graph_runtime
 
@@ -15,7 +16,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=int, default=101)
 parser.add_argument("--decoder", type=str, default="multi")
 parser.add_argument("--scale_factor", type=float, default=1.0)
-parser.add_argument("--notxt", action="store_true")
+parser.add_argument("--verbose", action="store_true")
 parser.add_argument("--image_dir", type=str, default="./images")
 parser.add_argument("--output_dir", type=str, default="./output")
 parser.add_argument("--force-cpu", type=str2bool, nargs="?", const=True, default=False)
@@ -67,10 +68,12 @@ def main():
         module = graph_runtime.create(tvm_graph, tvm_lib, ctx)
         module.load_params(tvm_params)
 
+    preprocessing_time = []
     inference_time = []
     processing_time = []
 
-    for f in filenames:
+    for f in tqdm(filenames, desc="Processed", unit="files"):
+        start = now()
         input_image, draw_image, output_scale = posenet.read_imgfile(
             f,
             scale_factor=args.scale_factor,
@@ -79,6 +82,8 @@ def main():
             if args.resize
             else None,
         )
+        preprocessing_time.append(now() - start)
+
         start = now()
         with torch.no_grad():
             if args.use_tvm:
@@ -134,7 +139,7 @@ def main():
 
             else:
                 raise NotImplementedError(
-                    "The decoder {} is not implemented.".format(decoder)
+                    "The decoder {} is not implemented.".format(args.decoder)
                 )
             processing_time.append(now() - start)
 
@@ -155,7 +160,7 @@ def main():
                 draw_image,
             )
 
-        if not args.notxt:
+        if args.verbose:
             print("Results for image: %s" % f)
             for point_idx in range(len(pose_scores)):
                 if pose_scores[point_idx] == 0.0:
@@ -169,12 +174,29 @@ def main():
                         % (posenet.PART_NAMES[keypoint_idx], score, coord)
                     )
 
-    avg_processing_time = np.mean(processing_time)
+    avg_preprocessing_time = np.mean(preprocessing_time)
+    avg_postprocessing_time = np.mean(processing_time)
     avg_inference_time = np.mean(inference_time)
     print("=" * 80)
-    print("Average post-processing FPS: {:.2f}".format(1 / avg_processing_time))
+    print(
+        "Decoder: {}, TVM Runtime: {}, Resize to {}x{} HxW: {}".format(
+            args.decoder,
+            "enabled" if args.use_tvm else "disabled",
+            args.processing_height,
+            args.processing_width,
+            "enabled" if args.resize else "disabled",
+        )
+    )
+    print("-" * 80)
+
+    print("Average pre-processing FPS: {:.2f}".format(1 / avg_preprocessing_time))
     print("Average inference FPS: {:.2f}".format(1 / avg_inference_time))
-    print("Average FPS: {:.2f}".format(1 / (avg_processing_time + avg_inference_time)))
+    print("Average post-processing FPS: {:.2f}".format(1 / avg_postprocessing_time))
+    print(
+        "Average FPS: {:.2f}".format(
+            1 / (avg_postprocessing_time + avg_inference_time + avg_preprocessing_time)
+        )
+    )
 
 
 if __name__ == "__main__":
