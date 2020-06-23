@@ -62,9 +62,9 @@ class InputConv(nn.Module):
         return F.relu6(self.conv(x))
 
 
-class SeperableConv(nn.Module):
+class SeparableConv(nn.Module):
     def __init__(self, inp, outp, k=3, stride=1, dilation=1):
-        super(SeperableConv, self).__init__()
+        super(SeparableConv, self).__init__()
         self.depthwise = nn.Conv2d(
             inp,
             inp,
@@ -91,53 +91,53 @@ MOBILENET_V1_CHECKPOINTS = {
 
 MOBILE_NET_V1_100 = [
     (InputConv, 3, 32, 2),
-    (SeperableConv, 32, 64, 1),
-    (SeperableConv, 64, 128, 2),
-    (SeperableConv, 128, 128, 1),
-    (SeperableConv, 128, 256, 2),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 512, 2),
-    (SeperableConv, 512, 512, 1),
-    (SeperableConv, 512, 512, 1),
-    (SeperableConv, 512, 512, 1),
-    (SeperableConv, 512, 512, 1),
-    (SeperableConv, 512, 512, 1),
-    (SeperableConv, 512, 1024, 2),
-    (SeperableConv, 1024, 1024, 1),
+    (SeparableConv, 32, 64, 1),
+    (SeparableConv, 64, 128, 2),
+    (SeparableConv, 128, 128, 1),
+    (SeparableConv, 128, 256, 2),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 512, 2),
+    (SeparableConv, 512, 512, 1),
+    (SeparableConv, 512, 512, 1),
+    (SeparableConv, 512, 512, 1),
+    (SeparableConv, 512, 512, 1),
+    (SeparableConv, 512, 512, 1),
+    (SeparableConv, 512, 1024, 2),
+    (SeparableConv, 1024, 1024, 1),
 ]
 
 MOBILE_NET_V1_75 = [
     (InputConv, 3, 24, 2),
-    (SeperableConv, 24, 48, 1),
-    (SeperableConv, 48, 96, 2),
-    (SeperableConv, 96, 96, 1),
-    (SeperableConv, 96, 192, 2),
-    (SeperableConv, 192, 192, 1),
-    (SeperableConv, 192, 384, 2),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
-    (SeperableConv, 384, 384, 1),
+    (SeparableConv, 24, 48, 1),
+    (SeparableConv, 48, 96, 2),
+    (SeparableConv, 96, 96, 1),
+    (SeparableConv, 96, 192, 2),
+    (SeparableConv, 192, 192, 1),
+    (SeparableConv, 192, 384, 2),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
+    (SeparableConv, 384, 384, 1),
 ]
 
 MOBILE_NET_V1_50 = [
     (InputConv, 3, 16, 2),
-    (SeperableConv, 16, 32, 1),
-    (SeperableConv, 32, 64, 2),
-    (SeperableConv, 64, 64, 1),
-    (SeperableConv, 64, 128, 2),
-    (SeperableConv, 128, 128, 1),
-    (SeperableConv, 128, 256, 2),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
-    (SeperableConv, 256, 256, 1),
+    (SeparableConv, 16, 32, 1),
+    (SeparableConv, 32, 64, 2),
+    (SeparableConv, 64, 64, 1),
+    (SeparableConv, 64, 128, 2),
+    (SeparableConv, 128, 128, 1),
+    (SeparableConv, 128, 256, 2),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
+    (SeparableConv, 256, 256, 1),
 ]
 
 

@@ -10,6 +10,11 @@ services:
     networks:
       - posenet-network
     command:  jupyter lab --ip 0.0.0.0 --no-browser --allow-root
+    environment: 
+      TVM_NUM_THREADS: 1
+    resources:
+      limits:
+        cpus: '1.0'
     volumes: 
       - .:/app
 
