@@ -6,8 +6,6 @@ import cv2
 import numpy as np
 import torch
 from tqdm import tqdm
-import tvm
-from tvm.contrib import graph_runtime
 
 import posenet
 from utils import str2bool
@@ -59,6 +57,9 @@ def main():
     ]
 
     if args.use_tvm:
+        import tvm
+        from tvm.contrib import graph_runtime
+
         with open(args.tvm_graph) as f:
             tvm_graph = f.read()
         tvm_lib = tvm.runtime.load_module(args.tvm_lib)
