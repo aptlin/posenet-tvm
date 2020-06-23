@@ -24,19 +24,7 @@ RUN pip3 install --no-cache-dir --upgrade pip \
     decorator \
     tornado \
     psutil \
-    xgboost \
-    matplotlib \
-    Image \
-    Pillow \
-    jupyter \
-    jupyterlab \
-    mxnet \
-    tensorflow \
-    keras \
-    gluoncv \
-    dgl \
-    torch \
-    torchvision
+    xgboost
 
 ARG POETRY_VERSION=1.0.9
 
