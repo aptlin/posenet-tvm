@@ -22,7 +22,6 @@ parser.add_argument("--processing-width", type=int, default=600)
 parser.add_argument("--processing-height", type=int, default=340)
 parser.add_argument("--n-channels", type=int, default=3)
 parser.add_argument("--target", type=str, default="llvm")
-parser.add_argument("--target-host", type=str, default="llvm")
 args = parser.parse_args()
 
 DEVICE = (
@@ -57,10 +56,9 @@ def main():
     shape_list = [(input_name, input_image.shape)]
     mod, params = relay.frontend.from_pytorch(scripted_model, shape_list)
 
+    target = tvm.target.create(args.target)
     with tvm.transform.PassContext(opt_level=3):
-        graph, lib, params = relay.build(
-            mod, target=args.target, target_host=args.target_host, params=params
-        )
+        graph, lib, params = relay.build(mod, target=target, params=params)
 
     path_lib = "{}/deploy_lib_{}_{}_{}.tar".format(
         args.output_dir, args.input_name, args.processing_width, args.processing_height
