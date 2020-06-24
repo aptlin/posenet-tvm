@@ -79,7 +79,7 @@ def main():
             f,
             scale_factor=args.scale_factor,
             output_stride=output_stride,
-            resize=(args.processing_width, args.processing_height)
+            resize=(args.processing_height, args.processing_width)
             if args.resize
             else None,
         )

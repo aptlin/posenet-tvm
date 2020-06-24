@@ -20,11 +20,13 @@ def valid_resolution(width, height, output_stride=16):
     return target_width, target_height
 
 
-def process_input(source_img, scale_factor=1.0, output_stride=16):
+def process_input(source_img, scale_factor=1.0, output_stride=16, resize=None):
+    height = source_img.shape[0]
+    width = source_img.shape[1]
+    if resize:
+        height, width = resize
     target_width, target_height = valid_resolution(
-        source_img.shape[1] * scale_factor,
-        source_img.shape[0] * scale_factor,
-        output_stride=output_stride,
+        width * scale_factor, height * scale_factor, output_stride=output_stride,
     )
     scale = np.array(
         [source_img.shape[0] / target_height, source_img.shape[1] / target_width]
@@ -41,18 +43,16 @@ def process_input(source_img, scale_factor=1.0, output_stride=16):
     return input_img, source_img, scale
 
 
-def read_cap(cap, scale_factor=1.0, output_stride=16):
+def read_cap(cap, scale_factor=1.0, output_stride=16, resize=None):
     res, img = cap.read()
     if not res:
         raise IOError("webcam failure")
     return process_input(img, scale_factor, output_stride)
 
 
-def read_imgfile(path, scale_factor=1.0, output_stride=16, resize=None, **kwargs):
+def read_imgfile(path, scale_factor=1.0, output_stride=16, resize=None):
     img = cv2.imread(path)
-    if resize:
-        img = cv2.resize(img, resize, **kwargs)
-    return process_input(img, scale_factor, output_stride)
+    return process_input(img, scale_factor, output_stride, resize)
 
 
 def draw_keypoints(

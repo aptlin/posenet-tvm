@@ -1,3 +1,5 @@
+import cv2
+from tqdm import tqdm
 import argparse
 
 
@@ -10,3 +12,16 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
+def frame_iter(capture, description):
+    def _iterator():
+        while capture.grab():
+            yield capture.retrieve()[1]
+
+    return tqdm(
+        _iterator(),
+        desc=description,
+        total=int(capture.get(cv2.CAP_PROP_FRAME_COUNT)),
+        unit="frames",
+    )
