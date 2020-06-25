@@ -18,6 +18,9 @@ parser.add_argument("--verbose", action="store_true")
 parser.add_argument("--image_dir", type=str, default="./images")
 parser.add_argument("--output_dir", type=str, default="./output")
 parser.add_argument("--force-cpu", type=str2bool, nargs="?", const=True, default=False)
+parser.add_argument(
+    "--save-keypoints", type=str2bool, nargs="?", const=True, default=True
+)
 parser.add_argument("--use-tvm", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--resize", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--input-name", type=str, default="image")
@@ -73,10 +76,10 @@ def main():
     inference_time = []
     processing_time = []
 
-    for f in tqdm(filenames, desc="Processed", unit="files"):
+    for filename in tqdm(filenames, desc="Processed", unit="files"):
         start = now()
         input_image, draw_image, output_scale = posenet.read_imgfile(
-            f,
+            filename,
             scale_factor=args.scale_factor,
             output_stride=output_stride,
             resize=(args.processing_height, args.processing_width)
@@ -157,12 +160,26 @@ def main():
             )
 
             cv2.imwrite(
-                os.path.join(args.output_dir, os.path.relpath(f, args.image_dir)),
+                os.path.join(
+                    args.output_dir, os.path.relpath(filename, args.image_dir)
+                ),
                 draw_image,
             )
+            if args.save_keypoints:
+                with open(
+                    os.path.join(
+                        args.output_dir,
+                        os.path.relpath(filename, args.image_dir) + ".npy",
+                    ),
+                    "wb",
+                ) as outfile:
+                    np.save(
+                        outfile,
+                        list(zip(pose_scores, keypoint_scores, keypoint_coords)),
+                    )
 
         if args.verbose:
-            print("Results for image: %s" % f)
+            print("Results for image: %s" % filename)
             for point_idx in range(len(pose_scores)):
                 if pose_scores[point_idx] == 0.0:
                     break

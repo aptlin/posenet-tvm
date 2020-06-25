@@ -8,19 +8,20 @@ import torch
 from tqdm import tqdm
 
 import posenet
-from utils import str2bool, frame_iter
+from utils import str2bool, frame_iter, make_video
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=int, default=101)
 parser.add_argument("--decoder", type=str, default="multi")
 parser.add_argument("--scale_factor", type=float, default=1.0)
 parser.add_argument("--verbose", action="store_true")
-parser.add_argument("--videos_dir", type=str, default="./videos")
+parser.add_argument("--video-dir", type=str, default="./videos")
 parser.add_argument("--output_dir", type=str, default="./output")
 parser.add_argument("--force-cpu", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--use-tvm", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--webcam", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--cam_id", type=int, default=0)
+parser.add_argument("--output-format", type=str, default="FMP4")
 parser.add_argument("--resize", type=str2bool, nargs="?", const=True, default=False)
 parser.add_argument("--input-name", type=str, default="image")
 parser.add_argument("--processing-width", type=int, default=600)
@@ -34,7 +35,6 @@ parser.add_argument(
 parser.add_argument(
     "--tvm-params", type=str, default="./build/deploy_params_image_600_340.params"
 )
-parser.add_argument("--output-format", type=str, default="FMP4")
 args = parser.parse_args()
 
 DEVICE = (
@@ -51,7 +51,7 @@ def process_capture(model, capture, **kwargs):
     inference_time = []
     processing_time = []
 
-    decoded_images = []
+    processed_images = []
     for frame in frame_iter(capture, "Progress"):
         if args.webcam:
             if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -143,25 +143,8 @@ def process_capture(model, capture, **kwargs):
             if args.webcam:
                 cv2.imshow("frame", draw_image)
             else:
-                decoded_images.append(draw_image)
-    return decoded_images, preprocessing_time, inference_time, processing_time
-
-
-def make_video(
-    output_filename, images, fps=30, size=None, is_color=True, format_code="FMP4"
-):
-    fourcc = cv2.VideoWriter_fourcc(*format_code)
-    vid = None
-    for image in images:
-        if vid is None:
-            if size is None:
-                size = image.shape[1], image.shape[0]
-            vid = cv2.VideoWriter(output_filename, fourcc, float(fps), size, is_color)
-        if size[0] != image.shape[1] and size[1] != image.shape[0]:
-            img = cv2.resize(image, size)
-        vid.write(image)
-    vid.release()
-    return vid
+                processed_images.append(draw_image)
+    return processed_images, preprocessing_time, inference_time, processing_time
 
 
 def main():
@@ -188,7 +171,7 @@ def main():
 
         filenames = [
             f.path
-            for f in os.scandir(args.videos_dir)
+            for f in os.scandir(args.video_dir)
             if f.is_file() and f.path.endswith((".mp4"))
         ]
 
@@ -204,7 +187,7 @@ def main():
                 out = process_capture(model, cap)
 
             (
-                decoded_images,
+                processed_images,
                 video_preprocessing_time,
                 video_inference_time,
                 video_processing_time,
@@ -212,13 +195,14 @@ def main():
             preprocessing_time += video_preprocessing_time
             inference_time += video_inference_time
             processing_time += video_processing_time
-            make_video(
-                os.path.join(
-                    args.output_dir, os.path.relpath(filename, args.videos_dir)
-                ),
-                decoded_images,
-                format_code=args.output_format,
-            )
+            if args.output_dir:
+                make_video(
+                    os.path.join(
+                        args.output_dir, os.path.relpath(filename, args.video_dir)
+                    ),
+                    processed_images,
+                    format_code=args.output_format,
+                )
 
         avg_preprocessing_time = np.mean(preprocessing_time)
         avg_postprocessing_time = np.mean(processing_time)
@@ -249,7 +233,7 @@ def main():
             )
         )
     else:
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(args.cam_id)
         if args.use_tvm:
             process_capture(model, cap, module=module)
         else:
