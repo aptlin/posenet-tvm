@@ -1,4 +1,4 @@
 {
-    "python.pythonPath": "/Users/sdll/miniconda3/envs/tvm/bin/python",
+    "python.pythonPath": "/Users/sdll/miniconda3/envs/dev/bin/python",
     "python.formatting.provider": "black"
 }
