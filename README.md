@@ -43,6 +43,7 @@ The following overview from [1] summarizes the design of a deep learning compile
 Most deep learning compilers (including TVM) contain two primary parts: the frontend and backend -- which munge and optimize the intermediate representation.
 
 a. The **frontend** converts a model from common deep learning frameworks like PyTorch and TensorFlow into the high-level graph representation that abstracts the computation and control flow with the goal of providing an interface for graph-level optimizations. The graph (both a DAG and a let-binding in the case of TVM) contains rich semantic information, offering extensibility for customized operators. The computation in TVM is represented in terms of _tensor expressions_, which combine lambda expressions of computational rules together with the knowledge of the shape of the output tensor.
+
 b. The **backend** is designed for translation of the high-level IR into the low-level IR that allows hardware-specific optimizations together with code generation on diverse hardware targets. TVM uses auto-tuning in order to determine the optimal parameter setting in the large optimization space.
 
 ### How is TVM different from [MLIR](https://mlir.llvm.org/)?
@@ -51,7 +52,7 @@ MLIR is a compiler infrastructure on par of LLVM that sits between the model rep
 
 ## Benchmarks
 
-On a single GPU, a model based on the popular [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) processes **6.87** FPS on a single GPU and **0.17** FPS on an 8-core CPU. TVM optimizations offer **4.71 FPS** on a **single-core CPU** and **16.11 FPS** on 8 cores.
+On a single GPU, a model based on the popular [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) processes **6.87** FPS on a single GPU and **0.17** FPS on an 8-core CPU. After TVM optimizations, PoseNet offers **4.71 FPS** on a **single-core CPU** and **16.11 FPS** on 8 cores, while also leaving lower memory footprint.
 
 The benchmarks below show inference times on Intel(R) Core(TM) i7-7820X CPUs @ 3.60GHz and a single NVIDIA GeForce GTX 1080 Ti GPU.
 
@@ -60,8 +61,8 @@ The benchmarks below show inference times on Intel(R) Core(TM) i7-7820X CPUs @ 3
 #### Inference on a single-core CPU with and without TVM
 
 <p align="center" width="100%">
-    <img width="45%" src="./docs/multi-pose-with-tvm-single-core.png"> 
-    <img width="45%" src="./docs/multi-pose-without-tvm-single-core.png"> 
+    <img width="49%" src="./docs/multi-pose-with-tvm-single-core.png"> 
+    <img width="49%" src="./docs/multi-pose-without-tvm-single-core.png"> 
 </p>
 
 ### Single-pose
@@ -69,15 +70,15 @@ The benchmarks below show inference times on Intel(R) Core(TM) i7-7820X CPUs @ 3
 #### Inference on a single-core CPU with and without TVM
 
 <p align="center" width="100%">
-    <img width="45%" src="./docs/single-pose-with-tvm-single-core.png"> 
-    <img width="45%" src="./docs/single-pose-without-tvm-single-core.png"> 
+    <img width="49%" src="./docs/single-pose-with-tvm-single-core.png"> 
+    <img width="49%" src="./docs/single-pose-without-tvm-single-core.png"> 
 </p>
 
 #### Inference on 8 cores of CPU vs inference on a single GPU, both with TVM
 
 <p align="center" width="100%">
-    <img width="45%" src="./docs/single-pose-with-tvm-multiple-cores.png"> 
-    <img width="45%" src="./docs/single-pose-with-tvm-gpu.png"> 
+    <img width="49%" src="./docs/single-pose-with-tvm-multiple-cores.png"> 
+    <img width="49%" src="./docs/single-pose-with-tvm-gpu.png"> 
 </p>
 
 ## References & further reading
