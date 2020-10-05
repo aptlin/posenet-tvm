@@ -84,4 +84,5 @@ The benchmarks below show inference times on Intel(R) Core(TM) i7-7820X CPUs @ 3
 ## References & further reading
 
 [1.] [A comprehensive comparison of deep learning compilers (2020)](https://arxiv.org/abs/2002.03794)
+
 [2.] [A dive into TVM via Jupyter Notebooks (WIP)](http://tvm.d2l.ai/)
